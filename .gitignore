@@ -1,0 +1,7 @@
+# Rust / general
+/firmware/target/
+/target/
+Cargo.lock
+
+# OS
+.DS_Store

@@ -1,0 +1,13 @@
+
+[package]
+name = "plants_love_rust_firmware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Optional Raspberry Pi GPIO crate (only used when building on the Pi or with the `gpio` feature)
+rppal = { version = "0.14", optional = true }
+
+[features]
+# Enable the GPIO example (pulls in `rppal`). Not enabled by default so local builds on Windows succeed.
+gpio = ["rppal"]

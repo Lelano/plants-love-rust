@@ -1,0 +1,75 @@
+name: CI — Cross-compile & optional deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Cross-compile firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install cross (Docker-based cross compiler)
+        run: cargo install cross --locked || true
+
+      - name: Build for armv7 (Raspberry Pi OS 32-bit)
+        run: cross build --target armv7-unknown-linux-gnueabihf --release
+
+      - name: Build for aarch64 (Raspberry Pi OS 64-bit)
+        run: cross build --target aarch64-unknown-linux-gnu --release
+
+      - name: Upload armv7 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-armv7
+          path: target/armv7-unknown-linux-gnueabihf/release/plants_love_rust_firmware
+
+      - name: Upload aarch64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-aarch64
+          path: target/aarch64-unknown-linux-gnu/release/plants_love_rust_firmware
+
+  deploy:
+    name: Deploy to Raspberry Pi (optional)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - name: Download armv7 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-armv7
+          path: deploy/
+
+      - name: Start ssh-agent and add private key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy binary to Pi and run (armv7)
+        env:
+          PI_USER: ${{ secrets.PI_USER }}
+        run: |
+          echo "Copying to ${PI_USER}@plants-love-rust:/home/${PI_USER}/plants_love_rust_firmware"
+          scp deploy/plants_love_rust_firmware ${PI_USER}@plants-love-rust:/home/${PI_USER}/plants_love_rust_firmware
+          ssh ${PI_USER}@plants-love-rust 'chmod +x /home/${PI_USER}/plants_love_rust_firmware && sudo /home/${PI_USER}/plants_love_rust_firmware &' 
+
+      - name: (Optional) Copy aarch64 artifact instead
+        if: false
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-aarch64
+          path: deploy-aarch64/
+
