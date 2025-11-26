@@ -8,12 +8,15 @@ param(
   [string]$KeyName = "id_rsa_plants"
 )
 
-if (Test-Path $KeyName -PathType Any -or Test-Path "$KeyName.pub") {
+if ((Test-Path $KeyName -PathType Any) -or (Test-Path "$KeyName.pub")) {
   Write-Error "Key files $KeyName or $KeyName.pub already exist. Aborting."
   exit 1
 }
 
-ssh-keygen -t rsa -b 4096 -f $KeyName -N "" -C "plants-love-rust-deploy"
+# Call ssh-keygen via Start-Process to avoid PowerShell argument parsing issues
+# Build an argument string with embedded quotes so ssh-keygen receives the empty passphrase correctly.
+$argStr = '-t rsa -b 4096 -f "' + $KeyName + '" -N "" -C "plants-love-rust-deploy"'
+Start-Process -FilePath 'ssh-keygen' -ArgumentList $argStr -NoNewWindow -Wait
 
 Write-Host "Private key: $KeyName"
 Write-Host "Public key:  $KeyName.pub"

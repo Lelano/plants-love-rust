@@ -13,7 +13,7 @@ pub fn run_gpio_example() -> Result<(), Box<dyn std::error::Error>> {
     let mut pin = gpio.get(PIN)?.into_output();
 
     // Blink the pin a few times
-    for _ in 0..5 {
+    while true {
         pin.set_high();
         sleep(Duration::from_millis(500));
         pin.set_low();
