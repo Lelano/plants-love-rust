@@ -5,3 +5,13 @@ Cargo.lock
 
 # OS
 .DS_Store
+
+# Deploy artifacts / archives
+*.zip
+*.tar.gz
+
+# SSH keys (do NOT commit private keys)
+scripts/id_rsa_*
+!scripts/id_rsa_*.pub
+*.pem
+*.key

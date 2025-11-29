@@ -58,6 +58,58 @@ Security note: keep `SSH_PRIVATE_KEY` secret and give it only minimal privileges
 
 To trigger the workflow manually, go to the Actions tab and run the `CI — Cross-compile & optional deploy` workflow with `workflow_dispatch`, or push to `main`.
 
+### Local one-command deploy (Windows)
+If you prefer to build on the Pi and deploy from your Windows PC, use the PowerShell script. Defaults are set to `-PiHost plants-love-rust` and `-PiUser user`.
+
+```powershell
+# From the repo root or anywhere (uses defaults: host plants-love-rust, user user)
+.\scripts\deploy.ps1
+
+# Enable GPIO feature and run the binary in background after building
+.\scripts\deploy.ps1 -Run -Features gpio
+
+# Restart an existing systemd service after building
+.\scripts\deploy.ps1 -ServiceName plants-firmware
+```
+
+Notes:
+- The script uploads the repository, builds `firmware` on the Pi with `cargo build --release`, and either runs the binary or restarts the provided service.
+- The script defaults to using the SSH key at `scripts/id_rsa_plants`. Override with `-KeyPath` if needed.
+- If Rust isn't installed on the Pi, the script will automatically install it via rustup on first run.
+
+### Binary-only deploy
+If you already have a Pi-compatible binary (from cross compile or CI), you can upload and run it without building on the Pi:
+
+```powershell
+# Upload and run
+.\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -Run
+
+# Upload and restart a systemd service
+.\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -ServiceName plants-firmware
+
+# Download the latest GitHub Actions artifact and deploy
+# Requires a GitHub token in $env:GITHUB_TOKEN or pass -GitHubToken
+.\scripts\deploy.ps1 -UseLatestArtifact -Run
+```
+
+The script will detect the Pi architecture via `uname -m` and try to pick the correct binary from the artifact. Set `-BinaryName` if your artifact uses a different filename.
+
+### Build locally and deploy (cross)
+You can build locally for the Pi target and deploy in one command. This prefers the `cross` tool (requires Docker) and will auto-detect the Pi architecture.
+
+```powershell
+# Build for the detected Pi arch and run
+.\scripts\deploy.ps1 -BuildLocal -Run
+
+# If you want to force a manual binary name on-device
+.\scripts\deploy.ps1 -BuildLocal -Run -BinaryName plants_love_rust_firmware
+```
+
+Notes:
+- cross: install with `cargo install cross` and ensure Docker is installed/running.
+- If `cross` is unavailable, the script falls back to `cargo build --target <triple>` (you'll need the proper target toolchain/linker set up).
+
+
 ### Creating SSH keys and adding GitHub secrets
 If you want the workflow to automatically deploy to your Pi (`plants-love-rust`), follow these steps locally and then add secrets in GitHub.
 
