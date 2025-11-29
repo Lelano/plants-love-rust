@@ -1,6 +1,6 @@
 # plants-love-rust
 
-This repository holds planning and documentation files for the "plants-love-rust" / PiGrow project. There is currently no Rust source code in this repository — it contains project artifacts, diagrams, and a bill of materials.
+This repository contains the PiGrow / "plants-love-rust" project, including a Rust firmware package in `firmware/` along with documentation, diagrams, and a bill of materials.
 
 ## Contents
 - `pigrow_project_proposal.pdf` — Project proposal and high-level goals.
@@ -9,9 +9,9 @@ This repository holds planning and documentation files for the "plants-love-rust
 - `System_BOM.xlsx` — Bill of materials for hardware components.
 
 ## Status
-- Type: Documentation / planning
-- Code: No Rust/Cargo project present yet
-- Next steps: scaffold Rust project, implement firmware/control code, and add CI/tests
+- Type: Firmware + documentation
+- Code: Rust firmware present under `firmware/`
+- Next steps: extend firmware logic (GPIO, sensors), add tests, deploy to Pi
 
 ## Firmware scaffold
 A minimal Rust firmware scaffold has been added in the `firmware/` folder. It contains a Cargo package you can build and run locally.
@@ -58,56 +58,114 @@ Security note: keep `SSH_PRIVATE_KEY` secret and give it only minimal privileges
 
 To trigger the workflow manually, go to the Actions tab and run the `CI — Cross-compile & optional deploy` workflow with `workflow_dispatch`, or push to `main`.
 
-### Local one-command deploy (Windows)
-If you prefer to build on the Pi and deploy from your Windows PC, use the PowerShell script. Defaults are set to `-PiHost plants-love-rust` and `-PiUser user`.
+### Build & Deploy to Raspberry Pi (Windows, PowerShell 7)
+Use the deploy script. Defaults: host `plants-love-rust`, user `user`, key `scripts/id_rsa_plants`.
 
 ```powershell
-# From the repo root or anywhere (uses defaults: host plants-love-rust, user user)
-.\scripts\deploy.ps1
+# From the REPO ROOT
+# One-command: build for the Pi (auto-detect arch), upload, and run in background
+pwsh -File .\scripts\deploy.ps1 -BuildLocal -Run
 
-# Enable GPIO feature and run the binary in background after building
-.\scripts\deploy.ps1 -Run -Features gpio
+# Include GPIO feature (requires wiring and group permissions on the Pi)
+pwsh -File .\scripts\deploy.ps1 -BuildLocal -Run -Features gpio
 
-# Restart an existing systemd service after building
-.\scripts\deploy.ps1 -ServiceName plants-firmware
+# Instead of running, restart a systemd service you created on the Pi
+pwsh -File .\scripts\deploy.ps1 -BuildLocal -ServiceName plants-firmware
+
+# Alternative: build on the Pi (upload source, remote cargo build), then run
+pwsh -File .\scripts\deploy.ps1 -BuildOnPi -Run
+pwsh -File .\scripts\deploy.ps1 -BuildOnPi -Run -Features gpio
+
+# From the SCRIPTS FOLDER (cd .\scripts first) — drop the 'scripts/' prefix
+pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 ```
 
 Notes:
-- The script uploads the repository, builds `firmware` on the Pi with `cargo build --release`, and either runs the binary or restarts the provided service.
+- Requires PowerShell 7 (pwsh). Install Docker Desktop for faster cross-compiles with `cross`.
+- The script uploads a binary to `~/plants-love-rust/firmware/target/release/plants_love_rust_firmware` and then runs/restarts as requested.
 - The script defaults to using the SSH key at `scripts/id_rsa_plants`. Override with `-KeyPath` if needed.
-- If Rust isn't installed on the Pi, the script will automatically install it via rustup on first run.
+- `-BuildOnPi` uploads a source archive and compiles on the Pi (first run may install Rust with rustup minimal profile).
 
 ### Binary-only deploy
 If you already have a Pi-compatible binary (from cross compile or CI), you can upload and run it without building on the Pi:
 
 ```powershell
 # Upload and run
-.\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -Run
+pwsh -File .\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -Run
 
 # Upload and restart a systemd service
-.\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -ServiceName plants-firmware
+pwsh -File .\scripts\deploy.ps1 -BinaryPath "C:\path\to\plants_love_rust_firmware" -ServiceName plants-firmware
 
 # Download the latest GitHub Actions artifact and deploy
 # Requires a GitHub token in $env:GITHUB_TOKEN or pass -GitHubToken
-.\scripts\deploy.ps1 -UseLatestArtifact -Run
+pwsh -File .\scripts\deploy.ps1 -UseLatestArtifact -Run
 ```
 
 The script will detect the Pi architecture via `uname -m` and try to pick the correct binary from the artifact. Set `-BinaryName` if your artifact uses a different filename.
 
-### Build locally and deploy (cross)
-You can build locally for the Pi target and deploy in one command. This prefers the `cross` tool (requires Docker) and will auto-detect the Pi architecture.
+### Manual cross-compile (64-bit Pi OS)
+If you prefer to build yourself with `cross` (Docker), then deploy:
 
 ```powershell
-# Build for the detected Pi arch and run
-.\scripts\deploy.ps1 -BuildLocal -Run
-
-# If you want to force a manual binary name on-device
-.\scripts\deploy.ps1 -BuildLocal -Run -BinaryName plants_love_rust_firmware
+cargo install cross
+cross build -p plants_love_rust_firmware --target aarch64-unknown-linux-gnu --release
+pwsh -File .\scripts\deploy.ps1 -BinaryPath \
+	".\target\aarch64-unknown-linux-gnu\release\plants_love_rust_firmware" -Run
 ```
 
-Notes:
-- cross: install with `cargo install cross` and ensure Docker is installed/running.
-- If `cross` is unavailable, the script falls back to `cargo build --target <triple>` (you'll need the proper target toolchain/linker set up).
+### Run from the Pi GUI (TigerVNC/Desktop)
+If you want a double‑click icon in the Pi’s desktop session, create a small run script and a desktop launcher on the Pi. These commands assume the default deploy paths and username `user`. Adjust if your username or `-RemoteDir` differs.
+
+On the Pi (open a terminal in the GUI):
+
+```bash
+# 1) Create a helper script that opens in a terminal and shows output/logs
+cat > /home/user/plants-love-rust/firmware/run_firmware.sh << 'EOF'
+#!/usr/bin/env bash
+cd /home/user/plants-love-rust/firmware
+./target/release/plants_love_rust_firmware 2>&1 | tee -a run.log
+read -p "Press Enter to close..."
+EOF
+chmod +x /home/user/plants-love-rust/firmware/run_firmware.sh
+
+# 2) Create a desktop launcher (.desktop file)
+cat > /home/user/Desktop/PlantsFirmware.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Plants Firmware
+Comment=Run plants-love-rust firmware
+Exec=x-terminal-emulator -e /home/user/plants-love-rust/firmware/run_firmware.sh
+Path=/home/user/plants-love-rust/firmware
+Terminal=false
+Icon=system-run
+Categories=Utility;
+EOF
+chmod +x /home/user/Desktop/PlantsFirmware.desktop
+```
+
+Background‑only variant (no terminal):
+
+```bash
+cat > /home/user/Desktop/PlantsFirmwareBackground.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Plants Firmware (background)
+Comment=Run plants-love-rust firmware in background
+Exec=/bin/bash -lc 'cd /home/user/plants-love-rust/firmware; nohup ./target/release/plants_love_rust_firmware > run.log 2>&1 &'
+Path=/home/user/plants-love-rust/firmware
+Terminal=false
+Icon=system-run
+Categories=Utility;
+EOF
+chmod +x /home/user/Desktop/PlantsFirmwareBackground.desktop
+```
+
+GPIO permission reminder: ensure the GUI user belongs to the `gpio` group if you use GPIO (no sudo required):
+
+```bash
+groups
+sudo usermod -aG gpio user  # then re-login or reboot to apply
+```
 
 
 ### Creating SSH keys and adding GitHub secrets

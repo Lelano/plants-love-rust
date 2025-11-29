@@ -6,19 +6,23 @@ pub fn run_gpio_example() -> Result<(), Box<dyn std::error::Error>> {
     use rppal::gpio::Gpio;
     use std::thread::sleep;
     use std::time::Duration;
+    use std::io::{self, Write};
 
     const PIN: u8 = 17; // physical BCM pin 17 (GPIO17) — change as needed
 
     let gpio = Gpio::new()?;
     let mut pin = gpio.get(PIN)?.into_output();
 
-    // Blink the pin a few times
-    while true {
+    // Blink the pin continuously and log transitions
+    loop {
         pin.set_high();
-        sleep(Duration::from_millis(500));
-        pin.set_low();
-        sleep(Duration::from_millis(500));
-    }
+        println!("GPIO{} -> HIGH", PIN);
+        io::stdout().flush().ok();
+        sleep(Duration::from_millis(1000));
 
-    Ok(())
+        pin.set_low();
+        println!("GPIO{} -> LOW", PIN);
+        io::stdout().flush().ok();
+        sleep(Duration::from_millis(1000));
+    }
 }
