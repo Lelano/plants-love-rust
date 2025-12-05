@@ -42,8 +42,20 @@ pub fn load_config() -> AppConfig {
 pub fn save_config(cfg: &AppConfig) -> io::Result<()> {
     if let Some(path) = config_path() {
         let data = toml::to_string_pretty(cfg)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            .map_err(io::Error::other)?;
         fs::write(path, data)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn defaults_are_sane() {
+        let d = AppConfig::default();
+        assert!(d.blink_on);
+        assert_eq!(d.interval_ms, 1000);
+    }
 }

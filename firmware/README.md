@@ -26,6 +26,9 @@ pwsh -File .\scripts\deploy.ps1 -BuildLocal -ServiceName plants-firmware
 pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 ```
 
+UI
+- The firmware provides a terminal UI. Run it in a terminal on the Pi.
+
 1) Build on the Raspberry Pi (recommended)
 
 - On the Pi (Raspberry Pi OS), install Rust and build:

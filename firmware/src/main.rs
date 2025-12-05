@@ -16,8 +16,8 @@ fn main() {
     controller.set_blink(cfg.blink_on);
     controller.set_interval_ms(cfg.interval_ms);
 
-    // Run the terminal UI
+    // Run the terminal UI only
     if let Err(e) = ui::run(controller, cfg) {
-        eprintln!("UI error: {e}");
+        eprintln!("TUI error: {e}");
     }
 }

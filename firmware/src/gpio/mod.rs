@@ -27,3 +27,20 @@ pub fn new_controller() -> Arc<dyn GpioController + Send + Sync> {
         Arc::new(NoopGpioController::new())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn controller_roundtrip() {
+        let ctl = new_controller();
+        ctl.set_blink(true);
+        assert!(ctl.is_blink());
+        ctl.set_blink(false);
+        assert!(!ctl.is_blink());
+
+        ctl.set_interval_ms(777);
+        assert_eq!(ctl.interval_ms(), 777);
+    }
+}
