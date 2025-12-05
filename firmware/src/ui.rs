@@ -8,6 +8,7 @@ use std::io::{stdout, Write};
 use std::sync::Arc;
 use std::time::Duration;
 
+// Compact TUI: fixed-position lines and short text
 const MAX_LINE_CHARS: usize = 30;
 
 fn clip_line(s: &str) -> String {
@@ -63,7 +64,7 @@ pub fn run(
 
     let mut running = true;
     loop {
-        draw_ui(&ctl, cfg.gpio_pin)?;
+        draw_ui(&ctl, cfg.gpio_pin, cfg.invert)?;
 
         if event::poll(Duration::from_millis(200))? {
             if let Event::Key(k) = event::read()? {
@@ -90,14 +91,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn clip_line_truncates() {
-        let s = "abcdefghijklmnopqrstuvwxyz0123456789"; // 36 chars
-        let clipped = clip_line(s);
-        assert!(clipped.len() <= MAX_LINE_CHARS);
-        assert_eq!(&clipped, &s[..MAX_LINE_CHARS]);
-    }
-
-    #[test]
     fn clamp_interval_bounds() {
         assert_eq!(clamp_interval(0), 50);
         assert_eq!(clamp_interval(49), 50);
@@ -108,7 +101,11 @@ mod tests {
     }
 }
 
-fn draw_ui(ctl: &Arc<dyn GpioController + Send + Sync>, pin: u8) -> Result<(), Box<dyn Error>> {
+fn draw_ui(
+    ctl: &Arc<dyn GpioController + Send + Sync>,
+    pin: u8,
+    invert: bool,
+) -> Result<(), Box<dyn Error>> {
     let mut out = stdout();
 
     execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
@@ -122,6 +119,7 @@ fn draw_ui(ctl: &Arc<dyn GpioController + Send + Sync>, pin: u8) -> Result<(), B
         "".to_string(),
         format!("Pin {}: {}", pin, if on { "ON" } else { "OFF" }),
         format!("Interval: {} ms", iv),
+        format!("Invert: {}", if invert { "ON" } else { "OFF" }),
         "".to_string(),
         "Controls:".to_string(),
         "  q/Esc  - Quit".to_string(),

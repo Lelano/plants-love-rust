@@ -17,10 +17,10 @@ pub use real::RppalGpioController;
 #[cfg(not(feature = "gpio"))]
 pub use stub::NoopGpioController;
 
-pub fn new_controller(_gpio_pin: u8) -> Arc<dyn GpioController + Send + Sync> {
+pub fn new_controller(_gpio_pin: u8, _invert: bool) -> Arc<dyn GpioController + Send + Sync> {
     #[cfg(feature = "gpio")]
     {
-        Arc::new(RppalGpioController::new(_gpio_pin))
+        Arc::new(RppalGpioController::new(_gpio_pin, _invert))
     }
     #[cfg(not(feature = "gpio"))]
     {
@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn controller_roundtrip() {
-        let ctl = new_controller(17);
+        let ctl = new_controller(17, false);
         ctl.set_blink(true);
         assert!(ctl.is_blink());
         ctl.set_blink(false);

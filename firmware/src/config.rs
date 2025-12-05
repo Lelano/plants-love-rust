@@ -10,6 +10,7 @@ pub struct AppConfig {
     pub blink_on: bool,
     pub interval_ms: u64,
     pub gpio_pin: u8,
+    pub invert: bool,
 }
 
 impl Default for AppConfig {
@@ -18,6 +19,7 @@ impl Default for AppConfig {
             blink_on: true,
             interval_ms: 1000,
             gpio_pin: 17,
+            invert: false,
         }
     }
 }
@@ -61,5 +63,6 @@ mod tests {
         assert!(d.blink_on);
         assert_eq!(d.interval_ms, 1000);
         assert_eq!(d.gpio_pin, 17);
+        assert!(!d.invert);
     }
 }

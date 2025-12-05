@@ -12,7 +12,7 @@ pub struct RppalGpioController {
 }
 
 impl RppalGpioController {
-    pub fn new(gpio_pin: u8) -> Self {
+    pub fn new(gpio_pin: u8, invert: bool) -> Self {
         let blink_on = Arc::new(AtomicBool::new(true));
         let interval_ms = Arc::new(AtomicU64::new(1000));
 
@@ -20,6 +20,7 @@ impl RppalGpioController {
         let interval_t = Arc::clone(&interval_ms);
 
         let handle = thread::spawn(move || {
+            println!("[gpio] thread start pin={} invert={}", gpio_pin, invert);
             // Prepare GPIO pin
             let gpio = match Gpio::new() {
                 Ok(g) => g,
@@ -37,11 +38,13 @@ impl RppalGpioController {
                 if blink_on_t.load(Ordering::Relaxed) {
                     if last.elapsed() >= iv {
                         state = !state;
-                        if state { pin.set_high(); } else { pin.set_low(); }
+                        let high = if invert { !state } else { state };
+                        if high { pin.set_high(); } else { pin.set_low(); }
                         last = Instant::now();
                     }
                 } else if state {
-                    pin.set_low();
+                    let high = if invert { true } else { false };
+                    if high { pin.set_high(); } else { pin.set_low(); }
                     state = false;
                 }
                 thread::sleep(Duration::from_millis(10));
