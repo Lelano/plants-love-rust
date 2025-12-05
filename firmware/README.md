@@ -13,6 +13,7 @@ Build & deploy from Windows (PowerShell 7)
 ```powershell
 # From the REPO ROOT
 # Build for the Pi (auto-detect arch), upload, and run in background
+# Note that docker must be running on your local machine for cross-compilation to work.
 pwsh -File .\scripts\deploy.ps1 -BuildLocal -Run
 
 # Include GPIO feature

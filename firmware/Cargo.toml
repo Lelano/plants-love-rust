@@ -7,6 +7,10 @@ edition = "2021"
 [dependencies]
 # Optional Raspberry Pi GPIO crate (only used when building on the Pi or with the `gpio` feature)
 rppal = { version = "0.22", optional = true }
+crossterm = "0.27"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+directories = "5"
 
 [features]
 # Enable the GPIO example (pulls in `rppal`). Not enabled by default so local builds on Windows succeed.

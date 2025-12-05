@@ -1,16 +1,23 @@
-// Minimal firmware scaffold for the PiGrow / plants-love-rust project.
-// Replace this with real firmware logic (GPIO, sensors, actuators, etc.).
+// Entry point that wires together UI, config, and GPIO controller.
 
-#[cfg(feature = "gpio")]
-mod gpio_example;
+mod ui;
+mod config;
+mod gpio;
+
+use crate::config::load_config;
+use crate::gpio::new_controller;
 
 fn main() {
-    println!("Plants Love Rust — firmware scaffold (hello world)");
+    // Load persisted configuration
+    let cfg = load_config();
 
-    #[cfg(feature = "gpio")]
-    {
-        if let Err(e) = gpio_example::run_gpio_example() {
-            eprintln!("GPIO example error: {}", e);
-        }
+    // Construct GPIO controller (real or stub depending on features)
+    let controller = new_controller();
+    controller.set_blink(cfg.blink_on);
+    controller.set_interval_ms(cfg.interval_ms);
+
+    // Run the terminal UI
+    if let Err(e) = ui::run(controller, cfg) {
+        eprintln!("UI error: {e}");
     }
 }
