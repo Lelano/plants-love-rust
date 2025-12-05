@@ -1,34 +1,31 @@
 use super::GpioController;
 use rppal::gpio::Gpio;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
 pub struct RppalGpioController {
-    blink_on: AtomicBool,
-    interval_ms: AtomicU64,
+    blink_on: Arc<AtomicBool>,
+    interval_ms: Arc<AtomicU64>,
     _thread: thread::JoinHandle<()>,
 }
 
 impl RppalGpioController {
-    pub fn new() -> Self {
-        let blink_on = AtomicBool::new(true);
-        let interval_ms = AtomicU64::new(1000);
+    pub fn new(gpio_pin: u8) -> Self {
+        let blink_on = Arc::new(AtomicBool::new(true));
+        let interval_ms = Arc::new(AtomicU64::new(1000));
 
-        let blink_on_ref = &blink_on as *const AtomicBool as usize;
-        let interval_ref = &interval_ms as *const AtomicU64 as usize;
+        let blink_on_t = Arc::clone(&blink_on);
+        let interval_t = Arc::clone(&interval_ms);
 
         let handle = thread::spawn(move || {
-            // reconstruct references
-            let blink_on: &AtomicBool = unsafe { &*(blink_on_ref as *const AtomicBool) };
-            let interval_ms: &AtomicU64 = unsafe { &*(interval_ref as *const AtomicU64) };
-
-            // Prepare GPIO17
+            // Prepare GPIO pin
             let gpio = match Gpio::new() {
                 Ok(g) => g,
                 Err(_) => return,
             };
-            let mut pin = match gpio.get(17).and_then(|p| Ok(p.into_output())) {
+            let mut pin = match gpio.get(gpio_pin).and_then(|p| Ok(p.into_output())) {
                 Ok(p) => p,
                 Err(_) => return,
             };
@@ -36,8 +33,8 @@ impl RppalGpioController {
             let mut last = Instant::now();
             let mut state = false;
             loop {
-                let iv = Duration::from_millis(interval_ms.load(Ordering::Relaxed));
-                if blink_on.load(Ordering::Relaxed) {
+                let iv = Duration::from_millis(interval_t.load(Ordering::Relaxed));
+                if blink_on_t.load(Ordering::Relaxed) {
                     if last.elapsed() >= iv {
                         state = !state;
                         if state { pin.set_high(); } else { pin.set_low(); }

@@ -19,6 +19,7 @@ impl GpioController for NoopGpioController {
     fn set_blink(&self, on: bool) {
         self.blink_on.store(on, Ordering::Relaxed);
     }
+
     fn is_blink(&self) -> bool {
         self.blink_on.load(Ordering::Relaxed)
     }

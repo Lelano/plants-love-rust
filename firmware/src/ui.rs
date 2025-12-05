@@ -63,7 +63,7 @@ pub fn run(
 
     let mut running = true;
     loop {
-        draw_ui(&ctl)?;
+        draw_ui(&ctl, cfg.gpio_pin)?;
 
         if event::poll(Duration::from_millis(200))? {
             if let Event::Key(k) = event::read()? {
@@ -108,7 +108,7 @@ mod tests {
     }
 }
 
-fn draw_ui(ctl: &Arc<dyn GpioController + Send + Sync>) -> Result<(), Box<dyn Error>> {
+fn draw_ui(ctl: &Arc<dyn GpioController + Send + Sync>, pin: u8) -> Result<(), Box<dyn Error>> {
     let mut out = stdout();
 
     execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
@@ -120,10 +120,7 @@ fn draw_ui(ctl: &Arc<dyn GpioController + Send + Sync>) -> Result<(), Box<dyn Er
         "Plants Love Rust UI".to_string(),
         "------------------------------".to_string(),
         "".to_string(),
-        format!(
-            "GPIO17 Blink: {}",
-            if on { "ON" } else { "OFF" }
-        ),
+        format!("Pin {}: {}", pin, if on { "ON" } else { "OFF" }),
         format!("Interval: {} ms", iv),
         "".to_string(),
         "Controls:".to_string(),

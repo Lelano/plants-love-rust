@@ -5,9 +5,11 @@ use std::io;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AppConfig {
     pub blink_on: bool,
     pub interval_ms: u64,
+    pub gpio_pin: u8,
 }
 
 impl Default for AppConfig {
@@ -15,6 +17,7 @@ impl Default for AppConfig {
         Self {
             blink_on: true,
             interval_ms: 1000,
+            gpio_pin: 17,
         }
     }
 }
@@ -57,5 +60,6 @@ mod tests {
         let d = AppConfig::default();
         assert!(d.blink_on);
         assert_eq!(d.interval_ms, 1000);
+        assert_eq!(d.gpio_pin, 17);
     }
 }
