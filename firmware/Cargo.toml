@@ -11,6 +11,7 @@ crossterm = "0.27"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
 directories = "5"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [features]
 # Enable the GPIO example (pulls in `rppal`). Not enabled by default so local builds on Windows succeed.

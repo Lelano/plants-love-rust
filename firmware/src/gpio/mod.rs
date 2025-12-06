@@ -8,19 +8,33 @@ pub trait GpioController: Send + Sync {
 }
 
 #[cfg(feature = "gpio")]
-mod real;
+mod intervalgpio;
+#[cfg(feature = "gpio")]
+mod schedulegpio;
 #[cfg(not(feature = "gpio"))]
 mod stub;
 
 #[cfg(feature = "gpio")]
-pub use real::RppalGpioController;
+pub use intervalgpio::IntervalRppalGpioController;
+#[cfg(feature = "gpio")]
+pub use schedulegpio::ScheduleRppalGpioController;
+#[cfg(feature = "gpio")]
+pub use schedulegpio::GpioSchedule;
+#[cfg(not(feature = "gpio"))]
+#[derive(Debug, Clone, Default)]
+pub struct GpioSchedule;
+
 #[cfg(not(feature = "gpio"))]
 pub use stub::NoopGpioController;
 
-pub fn new_controller(_gpio_pin: u8, _invert: bool) -> Arc<dyn GpioController + Send + Sync> {
+pub fn new_controller(_gpio_pin: u8, _invert: bool, _sched: Option<GpioSchedule>) -> Arc<dyn GpioController + Send + Sync> {
     #[cfg(feature = "gpio")]
     {
-        Arc::new(RppalGpioController::new(_gpio_pin, _invert))
+        if let Some(s) = _sched {
+            Arc::new(ScheduleRppalGpioController::new(_gpio_pin, _invert, s))
+        } else {
+            Arc::new(IntervalRppalGpioController::new(_gpio_pin, _invert))
+        }
     }
     #[cfg(not(feature = "gpio"))]
     {
@@ -34,7 +48,7 @@ mod tests {
 
     #[test]
     fn controller_roundtrip() {
-        let ctl = new_controller(17, false);
+        let ctl = new_controller(17, false, None);
         ctl.set_blink(true);
         assert!(ctl.is_blink());
         ctl.set_blink(false);

@@ -1,17 +1,19 @@
 use super::GpioController;
+use chrono::Weekday;
 use rppal::gpio::Gpio;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub struct RppalGpioController {
+pub struct IntervalRppalGpioController {
     blink_on: Arc<AtomicBool>,
     interval_ms: Arc<AtomicU64>,
     _thread: thread::JoinHandle<()>,
 }
 
-impl RppalGpioController {
+impl IntervalRppalGpioController {
     pub fn new(gpio_pin: u8, invert: bool) -> Self {
         let blink_on = Arc::new(AtomicBool::new(true));
         let interval_ms = Arc::new(AtomicU64::new(1000));
@@ -21,7 +23,6 @@ impl RppalGpioController {
 
         let handle = thread::spawn(move || {
             println!("[gpio] thread start pin={} invert={}", gpio_pin, invert);
-            // Prepare GPIO pin
             let gpio = match Gpio::new() {
                 Ok(g) => g,
                 Err(_) => return,
@@ -55,7 +56,13 @@ impl RppalGpioController {
     }
 }
 
-impl GpioController for RppalGpioController {
+#[derive(Debug, Clone, Default)]
+pub struct GpioSchedule {
+    // Vec of (start, end) in 24h HHMM (e.g., 930, 1745)
+    pub schedule: HashMap<Weekday, Vec<(u16, u16)>>,
+}
+
+impl GpioController for IntervalRppalGpioController {
     fn set_blink(&self, on: bool) {
         self.blink_on.store(on, Ordering::Relaxed);
     }

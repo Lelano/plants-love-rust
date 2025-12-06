@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -11,6 +12,12 @@ pub struct AppConfig {
     pub interval_ms: u64,
     pub gpio_pin: u8,
     pub invert: bool,
+    // Optional schedule loaded from config: map of day name -> list of (start,end) HHMM
+    // Example (TOML):
+    // [schedule]
+    // Monday = [[900,1700]]
+    // Sat = [[800,1200],[1300,1500]]
+    pub schedule: Option<HashMap<String, Vec<(u16, u16)>>>,
 }
 
 impl Default for AppConfig {
@@ -20,6 +27,7 @@ impl Default for AppConfig {
             interval_ms: 1000,
             gpio_pin: 17,
             invert: false,
+            schedule: None,
         }
     }
 }
@@ -64,5 +72,6 @@ mod tests {
         assert_eq!(d.interval_ms, 1000);
         assert_eq!(d.gpio_pin, 17);
         assert!(!d.invert);
+        assert!(d.schedule.is_none());
     }
 }
