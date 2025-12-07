@@ -18,6 +18,8 @@ pub struct AppConfig {
     // Monday = [[900,1700]]
     // Sat = [[800,1200],[1300,1500]]
     pub schedule: Option<HashMap<String, Vec<(u16, u16)>>>,
+    // Pin to use for schedule controller (if schedule is provided)
+    pub schedule_pin: u8,
 }
 
 impl Default for AppConfig {
@@ -28,6 +30,7 @@ impl Default for AppConfig {
             gpio_pin: 17,
             invert: false,
             schedule: None,
+            schedule_pin: 27,
         }
     }
 }
@@ -73,5 +76,6 @@ mod tests {
         assert_eq!(d.gpio_pin, 17);
         assert!(!d.invert);
         assert!(d.schedule.is_none());
+        assert_eq!(d.schedule_pin, 27);
     }
 }

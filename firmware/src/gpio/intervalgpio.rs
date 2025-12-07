@@ -1,7 +1,5 @@
 use super::GpioController;
-use chrono::Weekday;
 use rppal::gpio::Gpio;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -54,12 +52,6 @@ impl IntervalRppalGpioController {
 
         Self { blink_on, interval_ms, _thread: handle }
     }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct GpioSchedule {
-    // Vec of (start, end) in 24h HHMM (e.g., 930, 1745)
-    pub schedule: HashMap<Weekday, Vec<(u16, u16)>>,
 }
 
 impl GpioController for IntervalRppalGpioController {

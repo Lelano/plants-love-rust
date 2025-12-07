@@ -29,6 +29,32 @@ pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 UI
 - The firmware provides a terminal UI. Run it in a terminal on the Pi.
 
+Schedule (optional)
+- You can define a GPIO schedule in `~/.config/plants-love-rust/config.toml`.
+- Example:
+
+```toml
+# Pin used for schedule controller
+schedule_pin = 27
+
+[schedule]
+Monday = [[0, 900]]
+Tuesday = [[0, 900]]
+Wednesday = [[0, 900]]
+Thursday = [[0, 900]]
+Friday = [[0, 900]]
+Saturday = [[0, 900]]
+Sunday = [[0, 900]]
+```
+
+Validation rules
+- Times are HHMM: `0..=2359` with minutes `< 60`.
+- Each range must have `start < end`.
+- Overlapping or adjacent ranges are merged automatically.
+- Invalid entries are ignored and logged at startup.
+
+- If a schedule is present, the firmware starts a scheduler on `schedule_pin` and also runs the interactive interval controller on `gpio_pin`.
+
 1) Build on the Raspberry Pi (recommended)
 
 - On the Pi (Raspberry Pi OS), install Rust and build:
