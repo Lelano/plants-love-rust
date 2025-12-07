@@ -42,7 +42,7 @@ pub fn new_controller(_gpio_pin: u8, _invert: bool, _sched: Option<GpioSchedule>
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "gpio")))]
 mod tests {
     use super::*;
 

@@ -68,3 +68,18 @@ impl GpioController for IntervalRppalGpioController {
         self.interval_ms.load(Ordering::Relaxed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // This test is ignored because it would try to access GPIO on real hardware.
+    // It serves as a compile check when `--features gpio` is enabled.
+    #[test]
+    #[ignore]
+    fn construct_interval_controller() {
+        let ctl = IntervalRppalGpioController::new(17, false);
+        // compile-only: do not call methods that interact with hardware
+        let _ = ctl.interval_ms();
+    }
+}

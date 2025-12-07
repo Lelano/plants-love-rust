@@ -77,3 +77,19 @@ impl GpioController for ScheduleRppalGpioController {
         self.interval_ms.load(Ordering::Relaxed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Ignored: requires GPIO hardware. Ensures API compiles with `--features gpio`.
+    #[test]
+    #[ignore]
+    fn construct_schedule_controller() {
+        let mut m: HashMap<Weekday, Vec<(u16, u16)>> = HashMap::new();
+        m.insert(Weekday::Mon, vec![(900, 1700)]);
+        let sched = GpioSchedule { schedule: m };
+        let ctl = ScheduleRppalGpioController::new(27, false, sched);
+        let _ = ctl.is_blink();
+    }
+}

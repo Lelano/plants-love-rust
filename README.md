@@ -13,6 +13,10 @@ This repository contains the PiGrow / "plants-love-rust" project, including a Ru
 - Code: Rust firmware present under `firmware/`
 - Next steps: extend firmware logic (GPIO, sensors), add tests, deploy to Pi
 
+## AI Usage
+Some documentation and code comments were generated or assisted by AI tools (ChatGPT-5). Code logic and structure were designed and implemented by the project authors. AI was used in the ssh deploy script generation and README writing. Source library use such as RPPAL was determined by the authors, GPIO and other hardware interfacing code was authored by the project team. 
+
+
 ## Firmware scaffold
 A minimal Rust firmware scaffold has been added in the `firmware/` folder. It contains a Cargo package you can build and run locally.
 
@@ -52,6 +56,9 @@ Optional automatic deploy: the workflow contains an optional `deploy` job that w
 Setup on the Pi:
 
 1. Add the corresponding public key to `/home/<pi-user>/.ssh/authorized_keys` on the Pi.
+
+Note: For security, GitHub Actions is not recommended so that you do not expose your Pi to the public internet. Instead, connect the the Pi over local network or VPN by running the deploy step from a trusted network within which the Pi is reachable (e.g., your home network).
+
 2. Ensure the Pi hostname `plants-love-rust` resolves on the GitHub Actions runner network (usually via your VPN or a public IP). If your Pi is behind NAT, consider a VPN or a build artifact download + manual deploy.
 
 Security note: keep `SSH_PRIVATE_KEY` secret and give it only minimal privileges. The workflow uses `ssh` and `scp` to copy and execute the binary.

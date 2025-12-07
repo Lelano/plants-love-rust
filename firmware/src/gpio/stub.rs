@@ -30,3 +30,19 @@ impl GpioController for NoopGpioController {
         self.interval_ms.load(Ordering::Relaxed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn noop_roundtrip() {
+        let ctl = NoopGpioController::new();
+        assert!(ctl.is_blink());
+        ctl.set_blink(false);
+        assert!(!ctl.is_blink());
+
+        ctl.set_interval_ms(2500);
+        assert_eq!(ctl.interval_ms(), 2500);
+    }
+}
