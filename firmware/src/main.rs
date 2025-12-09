@@ -3,9 +3,11 @@
 mod ui;
 mod config;
 mod gpio;
+mod analog;
 
 use crate::config::load_config;
 use crate::gpio::new_controller;
+use crate::analog::Ads1115;
 #[cfg(feature = "gpio")]
 use chrono::Weekday;
 #[cfg(feature = "gpio")]
@@ -14,6 +16,7 @@ use crate::gpio::ScheduleRppalGpioController;
 use crate::gpio::GpioSchedule;
 #[cfg(feature = "gpio")]
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     // Load persisted configuration
@@ -39,8 +42,20 @@ fn main() {
     controller.set_blink(cfg.blink_on);
     controller.set_interval_ms(cfg.interval_ms);
 
+    // Initialize ADS1115 moisture sensor
+    let sensor = match Ads1115::new() {
+        Ok(s) => {
+            println!("[startup] ADS1115 initialized on I2C");
+            Some(Arc::new(Mutex::new(s)))
+        }
+        Err(e) => {
+            println!("[startup] Failed to initialize ADS1115: {}", e);
+            None
+        }
+    };
+
     // Run the terminal UI only
-    if let Err(e) = ui::run(controller, cfg) {
+    if let Err(e) = ui::run(controller, cfg, sensor) {
         eprintln!("TUI error: {e}");
     }
 }

@@ -20,6 +20,9 @@ pub struct AppConfig {
     pub schedule: Option<HashMap<String, Vec<(u16, u16)>>>,
     // Pin to use for schedule controller (if schedule is provided)
     pub schedule_pin: u8,
+    // Moisture sensor calibration values
+    pub moisture_dry_value: Option<i16>,
+    pub moisture_wet_value: Option<i16>,
 }
 
 impl Default for AppConfig {
@@ -31,6 +34,8 @@ impl Default for AppConfig {
             invert: false,
             schedule: None,
             schedule_pin: 27,
+            moisture_dry_value: None,
+            moisture_wet_value: None,
         }
     }
 }

@@ -2,6 +2,20 @@
 
 This repository contains the PiGrow / "plants-love-rust" project, including a Rust firmware package in `firmware/` along with documentation, diagrams, and a bill of materials.
 
+## What is plants-love-rust?
+"plants-love-rust" is a hobbyist project to create a plant watering and care system using a Raspberry Pi and Rust firmware. The project aims to provide an open-source solution for automated plant care, leveraging Rust's safety and performance features. Current functionality includes a minimal firmware scaffold with GPIO control and a terminal UI. Code architecture is designed to be extensible for future features like sensor integration and scheduling. Currently, scheduling and GPIO interval control are implemented. Future improvements include adding sensor support, enhancing the UI, and expanding scheduling capabilities.
+
+## Challenges
+Authors utilized windows systems for development, requiring cross-compilation to ARM for the Raspberry Pi. Setting up SSH-based deployment and ensuring GPIO access without root privileges were key challenges addressed in the project. Initial online suggestions were to open up home network access, but this was avoided for security reasons by using local network or VPN connections. Having an open port to the internet is not recommended for security! Instead, only local SSH access via VPN or local network was used. Second, there are a number of unanticipated bugs such as when the ssh connection drops (See current bugs). A Pi 3 A+ was used for this project, which has limited resources compared to newer models. Careful resource management and optimization were necessary to ensure smooth operation of the firmware on this hardware. For example, the PI could not run internet at all, and could not compile on the device at all! Cross-compilation was necessary to build the firmware on a more powerful development machine. Finding hardware and assembling the ciruits took about 30-40% of the project time which was unanticipated, as well as setting up the CI/CD pipeline for cross-compilation and deployment. Per usual, even getting started with embedded Rust toolchains takes time to get a working development environment.
+
+### Current Bugs
+- When the ssh connection drops, whatever the pin statis was (High or Low) it will stay that way even after the program is closed. This can be fixed by manually setting the pin state using the gpio command line tool on the Pi, but could be dangerous in a real world scenario if the pin is controlling something like a water pump.
+- The schedule controller and interval controller can conflict if they are both trying to set the same pin at the same time. This can lead to unexpected behavior, such as the pin being set to High when it should be Low. This could be fixed by adding a mutex or some other form of synchronization between the two controllers.
+- The terminal UI can be a bit finicky, especially when resizing the terminal window. This could be improved by using a more robust terminal UI library or by adding better error handling.
+- During interval control, if the unterval goes below 100ms, the interval limit becomes 50ms and then never goes to numbers divisible by 100ums until going to the max clamped range of 10000ms and back down.
+- 
+
+
 ## Contents
 - `pigrow_project_proposal.pdf` — Project proposal and high-level goals.
 - `Setup/` — Setup materials and supporting documents (see directory for details).
@@ -14,7 +28,7 @@ This repository contains the PiGrow / "plants-love-rust" project, including a Ru
 - Next steps: extend firmware logic (GPIO, sensors), add tests, deploy to Pi
 
 ## AI Usage
-Some documentation and code comments were generated or assisted by AI tools (ChatGPT-5). Code logic and structure were designed and implemented by the project authors. AI was used in the ssh deploy script generation and README writing. Source library use such as RPPAL was determined by the authors, GPIO and other hardware interfacing code was authored by the project team. 
+Some documentation and code comments were generated or assisted by AI tools (ChatGPT-5). Code logic and structure were designed and implemented by the project authors. AI was used in the ssh deploy script generation and README writing. Source library use such as RPPAL was determined by the authors, GPIO and other hardware interfacing code was authored by the project team.
 
 
 ## Firmware scaffold
@@ -86,6 +100,43 @@ pwsh -File .\scripts\deploy.ps1 -BuildOnPi -Run -Features gpio
 # From the SCRIPTS FOLDER (cd .\scripts first) — drop the 'scripts/' prefix
 pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 ```
+
+### Firmware Features (runtime)
+- Terminal UI with controls:
+	- `q`/`Esc`: quit, `b`: toggle blink, `+`/`-`: adjust interval (ms)
+- Interval GPIO controller on `gpio_pin` (default 17)
+- Optional schedule controller on `schedule_pin` (default 27)
+	- Reads day/time ranges from config and sets pin High/Low accordingly
+- `--features gpio` is required to access real GPIO on the Pi
+
+### Configuration (on the Pi)
+The firmware loads settings from `~/.config/plants-love-rust/config.toml`.
+
+Keys:
+- `blink_on` (bool), `interval_ms` (u64), `gpio_pin` (u8), `invert` (bool)
+- `schedule_pin` (u8) and optional `[schedule]` table for day ranges
+
+Example:
+```toml
+blink_on = true
+interval_ms = 1500
+gpio_pin = 17
+invert = false
+schedule_pin = 27
+
+[schedule]
+Monday = [[0, 900]]
+Tuesday = [[0, 900]]
+Wednesday = [[0, 900]]
+Thursday = [[0, 900]]
+Friday = [[0, 900]]
+Saturday = [[0, 900]]
+Sunday = [[0, 900]]
+```
+
+Schedule validation:
+- Times are HHMM with `HH < 24` and `MM < 60`, and `start < end`
+- Overlapping/adjacent ranges are merged; invalid entries are ignored with a log
 
 Notes:
 - Requires PowerShell 7 (pwsh). Install Docker Desktop for faster cross-compiles with `cross`.
