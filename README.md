@@ -2,6 +2,9 @@
 
 This repository contains the PiGrow / "plants-love-rust" project, including a Rust firmware package in `firmware/` along with documentation, diagrams, and a bill of materials.
 
+Video Demo A: [YouTube Link](https://youtu.be/oV91bx7Vw_A)
+Video Demo B: [YouTube Link](https://youtu.be/MlNfF8ClQHA)
+
 ## What is plants-love-rust?
 "plants-love-rust" is a hobbyist project to create a plant watering and care system using a Raspberry Pi and Rust firmware. The project aims to provide an open-source solution for automated plant care, leveraging Rust's safety and performance features. Current functionality includes GPIO control, scheduling, a terminal UI, and **soil moisture sensing via ADS1115 ADC with I2C communication**. The system features:
 - Interval-based and schedule-based GPIO control
