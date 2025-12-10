@@ -32,7 +32,12 @@ Authors utilized windows systems for development, requiring cross-compilation to
 - Architecture: [`SystemArch.drawio`](SystemArch.drawio) — open in the free draw.io app or VS Code Draw.io extension to view/edit.
 - Bill of Materials: [`System_BOM.xlsx`](System_BOM.xlsx).
 - Architecture (PNG preview):
+
 ![System Architecture](SystemArch.png)
+
+- Wiring Diagram (PNG preview):
+
+![Wiring Diagram](WiringDiagram.png)
 
 ## Status
 - Type: Firmware + documentation
