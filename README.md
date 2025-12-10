@@ -31,49 +31,20 @@ Authors utilized windows systems for development, requiring cross-compilation to
 ## System Design Diagrams
 - Architecture: [`SystemArch.drawio`](SystemArch.drawio) — open in the free draw.io app or VS Code Draw.io extension to view/edit.
 - Bill of Materials: [`System_BOM.xlsx`](System_BOM.xlsx).
-
-### Wiring Diagram (Pi ↔ ADS1115 ↔ Moisture Sensor)
-```
-Pi 3A+ (40-pin)        ADS1115             Moisture Sensor v1.2
-------------------     ----------------    ---------------------
-3.3V (Pin 1)    ───▶   VDD
-GND  (Pin 6)    ───▶   GND                 GND
-SCL  (Pin 5)    ───▶   SCL
-SDA  (Pin 3)    ───▶   SDA
-ADDR            ───▶   GND (addr 0x48)
-									  AOUT ───▶ A3 (ADS1115)
-									  VCC  ───▶ 3.3V or 5V (per sensor spec)
-```
-
-```mermaid
-flowchart LR
-	Pi["Raspberry Pi 3 A+
-	SDA: GPIO2 (Pin 3)
-	SCL: GPIO3 (Pin 5)
-	3.3V: Pin 1
-	GND: Pin 6"]
-	ADC["ADS1115
-	VDD ↔ 3.3V
-	GND ↔ GND
-	SDA ↔ SDA
-	SCL ↔ SCL
-	ADDR ↔ GND (0x48)
-	A3 ↔ Moisture AOUT"]
-	Sensor["Capacitive Moisture Sensor v1.2
-	AOUT → ADS1115 A3
-	VCC → 3.3V or 5V
-	GND → GND"]
-
-	Pi -- I2C SDA/SCL --> ADC
-	Sensor -- Analog AOUT --> ADC
-	Pi -- Power 3.3V/GND --- Sensor
-	Pi -- Power 3.3V/GND --- ADC
-```
+- Architecture (PNG preview):
+![System Architecture](SystemArch.png)
 
 ## Status
 - Type: Firmware + documentation
 - Code: Rust firmware present under `firmware/`
-- Next steps: extend firmware logic (GPIO, sensors), add tests, deploy to Pi
+- Project future:
+	- Web interface
+	- Automated watering based on moisture thresholds
+	- Data logging
+	- App communication with the Pi via Android or web app
+	- Expandable sensor support (e.g., temperature, humidity)
+	- Pi minimization for headless operation
+	- Mobile app for remote monitoring and control
 
 ## AI Usage
 Some documentation and code comments were generated or assisted by AI tools (ChatGPT-5). Code logic and structure were designed and implemented by the project authors. AI was used in the ssh deploy script generation and README writing. Source library use such as RPPAL was determined by the authors, GPIO and other hardware interfacing code was authored by the project team.
