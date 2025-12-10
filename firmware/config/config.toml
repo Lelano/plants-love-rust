@@ -1,0 +1,16 @@
+blink_on = true
+interval_ms = 1000
+gpio_pin = 17
+invert = false
+schedule_pin = 27
+moisture_dry_value = 22481
+moisture_wet_value = 10520
+
+[schedule]
+Monday = [[0, 900]]
+Tuesday = [[0, 900]]
+Wednesday = [[0, 900]]
+Thursday = [[0, 900]]
+Friday = [[0, 900]]
+Saturday = [[0, 900]]
+Sunday = [[0, 900]]
