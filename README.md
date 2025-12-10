@@ -52,7 +52,25 @@ Authors utilized windows systems for development, requiring cross-compilation to
 	- Mobile app for remote monitoring and control
 
 ## AI Usage
-Some documentation and code comments were generated or assisted by AI tools (ChatGPT-5). Code logic and structure were designed and implemented by the project authors. AI was used in the ssh deploy script generation and README writing. Source library use such as RPPAL was determined by the authors, GPIO and other hardware interfacing code was authored by the project team.
+
+### What AI Assisted With:
+- Documentation and README writing
+- SSH deployment script generation and refinement
+- ADS1115 I2C driver implementation and register configuration was initially researched with AI help.
+- Getting started guidance with I2C and ADS1115 driver patterns in Rust
+- Code comment generation
+- Formatting and editing of markdown documentation
+
+### What Was Custom/Original:
+- Core firmware architecture (GPIO control, scheduling, TUI design)
+- GPIO interval controller atomic threading logic was done with assistance but heavily modified for this project.
+- Terminal UI layout and sensor display rendering
+- Calibration logic and moisture percentage calculations
+- Configuration management (local config directory strategy)
+- Schedule validation and time range merging algorithm
+
+### Methodology:
+Code logic and core implementations were designed and authored by the project team. AI was used as a tool for documentation, learning, and code formatting—not for generating the core logic. All custom code has been audited and verified to be original work. Library selections (rppal, crossterm, serde) were determined by the authors based on project requirements.
 
 
 ## Firmware scaffold
@@ -75,36 +93,6 @@ Keep docs in the repo root and code in `firmware/` to separate concerns.
 
 ### Raspberry Pi 3 A+
 This project targets a Raspberry Pi 3 A+ (ARM Cortex-A53). Below are recommended ways to build and run the firmware binary for that board.
-
-### Wiring Diagram — ADS1115 & Moisture Sensor
-
-**ADS1115 to Raspberry Pi (I2C):**
-```
-ADS1115          Raspberry Pi
--------          ------------
-VDD      ────►   3.3V (Pin 1)
-GND      ────►   GND (Pin 6)
-SCL      ────►   SCL (Pin 5, GPIO 3)
-SDA      ────►   SDA (Pin 3, GPIO 2)
-ADDR     ────►   GND (sets I2C address to 0x48)
-```
-
-**Capacitive Moisture Sensor v1.2 to ADS1115:**
-```
-Moisture Sensor  ADS1115/Pi
----------------  ----------
-VCC      ────►   3.3V or 5V (check sensor rating)
-GND      ────►   GND
-AOUT     ────►   A3 (ADS1115 analog channel 3)
-```
-
-***GPIO Pins:**
-
-- Default GPIO pin for interval control: GPIO17 (Pin 11)
-GND ────► GND (Pin 9)
-VCC ────► GPIO Pin 17 (Pin 11)
-Gnd ────► GND (Pin 9)
-VCC ────► GPOI Pin 27
 
 **Enable I2C on the Pi:**
 ```bash
