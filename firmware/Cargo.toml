@@ -3,6 +3,7 @@
 name = "plants_love_rust_firmware"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 # Optional Raspberry Pi GPIO crate (only used when building on the Pi or with the `gpio` feature)

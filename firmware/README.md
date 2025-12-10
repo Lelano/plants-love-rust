@@ -1,14 +1,47 @@
 # Firmware README — Raspberry Pi 3 A+
 
-This folder contains a minimal Rust firmware scaffold for the PiGrow / `plants-love-rust` project.
+This folder contains Rust firmware for the PiGrow / `plants-love-rust` project with GPIO control, scheduling, and **soil moisture sensing via ADS1115 ADC**.
 
 Supported board: Raspberry Pi 3 A+ (ARM Cortex-A53)
 
-Quick summary
+Features:
+- Interval-based and schedule-based GPIO control
+- Real-time soil moisture monitoring via I2C ADS1115 16-bit ADC
+- Interactive terminal UI with live sensor display and calibration
+- Persistent configuration with TOML
+
+Features:
+- Interval-based and schedule-based GPIO control
+- Real-time soil moisture monitoring via I2C ADS1115 16-bit ADC
+- Interactive terminal UI with live sensor display and calibration
+- Persistent configuration with TOML
+
+## Quick summary
 - Build on the Pi itself (recommended for simplicity).
 - Cross-compile from your development machine when you prefer faster iterations.
 
-Build & deploy from Windows (PowerShell 7)
+## Hardware Setup
+
+### Enable I2C
+Before running, enable I2C on the Raspberry Pi:
+```bash
+sudo raspi-config
+# Interface Options → I2C → Enable
+sudo reboot
+```
+
+Verify the ADS1115 is detected:
+```bash
+i2cdetect -y 1
+# Should show device at address 0x48
+```
+
+### Wiring
+See the main README for complete wiring diagram. Quick reference:
+- **ADS1115**: VDD→3.3V, GND→GND, SCL→GPIO3, SDA→GPIO2, ADDR→GND
+- **Moisture Sensor**: VCC→3.3V/5V, GND→GND, AOUT→ADS1115 A3
+
+## Build & deploy from Windows (PowerShell 7)
 
 ```powershell
 # From the REPO ROOT
@@ -26,8 +59,25 @@ pwsh -File .\scripts\deploy.ps1 -BuildLocal -ServiceName plants-firmware
 pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 ```
 
-UI
+## UI
 - The firmware provides a terminal UI. Run it in a terminal on the Pi.
+- **Controls:**
+  - `q`/`Esc`: Quit
+  - `b`: Toggle GPIO blink
+  - `+`/`-`: Adjust interval (ms)
+  - `d`: Calibrate dry value (place sensor in dry air/soil, then press)
+  - `w`: Calibrate wet value (place sensor in water/saturated soil, then press)
+- **Display:**
+  - GPIO pin status and interval
+  - Live moisture sensor readings: raw ADC value, voltage, moisture %
+  - Calibration status (dry/wet values)
+
+## Sensor Calibration
+1. Run the firmware: `./plants_love_rust_firmware`
+2. With sensor in **dry** conditions, press `d` to capture dry value
+3. With sensor in **wet** conditions (water or saturated soil), press `w`
+4. Values are saved to `~/.config/plants-love-rust/config.toml`
+5. Moisture % will now display based on calibration
 
 Schedule (optional)
 - You can define a GPIO schedule in `~/.config/plants-love-rust/config.toml`.
@@ -116,10 +166,11 @@ Notes
 - If you build directly on the Pi, you don't need cross tools; `cargo build --release` will produce a runnable binary for the Pi's OS.
 - If you plan to use hardware interfaces (GPIO, I2C, SPI), add the appropriate crates and run with the required OS permissions or system services.
 
-GPIO example
-- A gated GPIO example is included and uses the `rppal` crate. It is disabled by default so building on non-Linux hosts (Windows/macOS) succeeds.
+## GPIO and Sensor Features
+- GPIO control is gated behind the `gpio` feature using the `rppal` crate. It is disabled by default so building on non-Linux hosts (Windows/macOS) succeeds.
+- The **analog module** provides I2C communication with the ADS1115 ADC for reading the capacitive moisture sensor on channel A3.
 
-To build the GPIO example (on the Pi or when you have a suitable cross-toolchain):
+To build with GPIO and sensor support (on the Pi or when you have a suitable cross-toolchain):
 
 ```bash
 # Build on the Pi (recommended):
@@ -135,7 +186,7 @@ rustup target add aarch64-unknown-linux-gnu
 cargo build --target aarch64-unknown-linux-gnu --release --features gpio
 ```
 
-The example blinks BCM pin 17 continuously and logs `GPIO17 -> HIGH/LOW`. Modify `firmware/src/gpio_example.rs` to change the pin or behavior.
+The firmware uses BCM pin 17 for interval control and pin 27 for optional scheduling. Modify settings in the config file or via the UI.
 
 Deploy script default paths on the Pi
 - Project root: `/home/user/plants-love-rust`

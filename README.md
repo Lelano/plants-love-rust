@@ -3,7 +3,13 @@
 This repository contains the PiGrow / "plants-love-rust" project, including a Rust firmware package in `firmware/` along with documentation, diagrams, and a bill of materials.
 
 ## What is plants-love-rust?
-"plants-love-rust" is a hobbyist project to create a plant watering and care system using a Raspberry Pi and Rust firmware. The project aims to provide an open-source solution for automated plant care, leveraging Rust's safety and performance features. Current functionality includes a minimal firmware scaffold with GPIO control and a terminal UI. Code architecture is designed to be extensible for future features like sensor integration and scheduling. Currently, scheduling and GPIO interval control are implemented. Future improvements include adding sensor support, enhancing the UI, and expanding scheduling capabilities.
+"plants-love-rust" is a hobbyist project to create a plant watering and care system using a Raspberry Pi and Rust firmware. The project aims to provide an open-source solution for automated plant care, leveraging Rust's safety and performance features. Current functionality includes GPIO control, scheduling, a terminal UI, and **soil moisture sensing via ADS1115 ADC with I2C communication**. The system features:
+- Interval-based and schedule-based GPIO control
+- Real-time soil moisture monitoring from a capacitive moisture sensor
+- Live voltage display and moisture percentage with calibration
+- Terminal UI with interactive controls for GPIO and sensor calibration
+
+Code architecture is designed to be extensible for future features. Future improvements include web interface, automated watering based on moisture thresholds, and data logging.
 
 ## Challenges
 Authors utilized windows systems for development, requiring cross-compilation to ARM for the Raspberry Pi. Setting up SSH-based deployment and ensuring GPIO access without root privileges were key challenges addressed in the project. Initial online suggestions were to open up home network access, but this was avoided for security reasons by using local network or VPN connections. Having an open port to the internet is not recommended for security! Instead, only local SSH access via VPN or local network was used. Second, there are a number of unanticipated bugs such as when the ssh connection drops (See current bugs). A Pi 3 A+ was used for this project, which has limited resources compared to newer models. Careful resource management and optimization were necessary to ensure smooth operation of the firmware on this hardware. For example, the PI could not run internet at all, and could not compile on the device at all! Cross-compilation was necessary to build the firmware on a more powerful development machine. Finding hardware and assembling the ciruits took about 30-40% of the project time which was unanticipated, as well as setting up the CI/CD pipeline for cross-compilation and deployment. Per usual, even getting started with embedded Rust toolchains takes time to get a working development environment.
@@ -47,8 +53,50 @@ cargo run
 
 Keep docs in the repo root and code in `firmware/` to separate concerns.
 
-## Raspberry Pi 3 A+
+## Hardware Setup
+
+### Raspberry Pi 3 A+
 This project targets a Raspberry Pi 3 A+ (ARM Cortex-A53). Below are recommended ways to build and run the firmware binary for that board.
+
+### Wiring Diagram — ADS1115 & Moisture Sensor
+
+**ADS1115 to Raspberry Pi (I2C):**
+```
+ADS1115          Raspberry Pi
+-------          ------------
+VDD      ────►   3.3V (Pin 1)
+GND      ────►   GND (Pin 6)
+SCL      ────►   SCL (Pin 5, GPIO 3)
+SDA      ────►   SDA (Pin 3, GPIO 2)
+ADDR     ────►   GND (sets I2C address to 0x48)
+```
+
+**Capacitive Moisture Sensor v1.2 to ADS1115:**
+```
+Moisture Sensor  ADS1115/Pi
+---------------  ----------
+VCC      ────►   3.3V or 5V (check sensor rating)
+GND      ────►   GND
+AOUT     ────►   A3 (ADS1115 analog channel 3)
+```
+
+***GPIO Pins:**
+
+- Default GPIO pin for interval control: GPIO17 (Pin 11)
+GND ────► GND (Pin 9)
+VCC ────► GPIO Pin 17 (Pin 11)
+Gnd ────► GND (Pin 9)
+VCC ────► GPOI Pin 27
+
+**Enable I2C on the Pi:**
+```bash
+sudo raspi-config
+# Interface Options → I2C → Enable
+sudo reboot
+
+# Verify I2C device detection (should show 0x48):
+i2cdetect -y 1
+```
 
 - Build directly on the Pi (easiest): install Rust via `rustup` on the Pi and `cargo build --release` in the `firmware/` folder.
 - Cross-compile from another machine: use `cross` (Docker-based) or add the appropriate Rust target and a cross-linker toolchain for `armv7-unknown-linux-gnueabihf` (32-bit OS) or `aarch64-unknown-linux-gnu` (64-bit OS).
@@ -103,11 +151,19 @@ pwsh -File .\deploy.ps1 -BuildLocal -Run -Features gpio
 
 ### Firmware Features (runtime)
 - Terminal UI with controls:
-	- `q`/`Esc`: quit, `b`: toggle blink, `+`/`-`: adjust interval (ms)
+	- `q`/`Esc`: quit
+	- `b`: toggle blink
+	- `+`/`-`: adjust interval (ms)
+	- `d`: calibrate dry value (sensor in air or dry soil)
+	- `w`: calibrate wet value (sensor in water or saturated soil)
 - Interval GPIO controller on `gpio_pin` (default 17)
 - Optional schedule controller on `schedule_pin` (default 27)
 	- Reads day/time ranges from config and sets pin High/Low accordingly
-- `--features gpio` is required to access real GPIO on the Pi
+- **Soil moisture sensing via ADS1115 (I2C)**:
+	- Real-time display of raw ADC value, voltage, and moisture percentage
+	- Calibration values saved to config for persistent moisture readings
+	- 16-bit resolution (±4.096V range) on A3 channel
+- `--features gpio` is required to access real GPIO and I2C on the Pi
 
 ### Configuration (on the Pi)
 The firmware loads settings from `~/.config/plants-love-rust/config.toml`.
@@ -115,6 +171,8 @@ The firmware loads settings from `~/.config/plants-love-rust/config.toml`.
 Keys:
 - `blink_on` (bool), `interval_ms` (u64), `gpio_pin` (u8), `invert` (bool)
 - `schedule_pin` (u8) and optional `[schedule]` table for day ranges
+- `moisture_dry_value` (i16, optional): calibrated raw ADC value for dry soil
+- `moisture_wet_value` (i16, optional): calibrated raw ADC value for wet soil
 
 Example:
 ```toml
@@ -123,6 +181,8 @@ interval_ms = 1500
 gpio_pin = 17
 invert = false
 schedule_pin = 27
+moisture_dry_value = 15000
+moisture_wet_value = 27000
 
 [schedule]
 Monday = [[0, 900]]
@@ -133,6 +193,11 @@ Friday = [[0, 900]]
 Saturday = [[0, 900]]
 Sunday = [[0, 900]]
 ```
+
+**Calibration:**
+1. Run the firmware and press `d` with the sensor in dry air/soil
+2. Press `w` with the sensor in water or fully saturated soil
+3. Values are automatically saved to config for persistent moisture % readings
 
 Schedule validation:
 - Times are HHMM with `HH < 24` and `MM < 60`, and `start < end`
@@ -286,6 +351,19 @@ Notes:
 ## Contributing
 - Open an issue or pull request describing changes.
 - Suggested first tasks: add `Cargo.toml`, scaffold `src/main.rs`, add a small README section describing the runtime, and add a license.
+
+## License
+
+Licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 ## Contact / Author
 Project files in this repo are provided by the project authors. For questions, open an issue in this repository.
