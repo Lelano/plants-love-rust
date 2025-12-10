@@ -28,6 +28,48 @@ Authors utilized windows systems for development, requiring cross-compilation to
 - `SystemArch.drawio` — System architecture diagram (draw.io file).
 - `System_BOM.xlsx` — Bill of materials for hardware components.
 
+## System Design Diagrams
+- Architecture: [`SystemArch.drawio`](SystemArch.drawio) — open in the free draw.io app or VS Code Draw.io extension to view/edit.
+- Bill of Materials: [`System_BOM.xlsx`](System_BOM.xlsx).
+
+### Wiring Diagram (Pi ↔ ADS1115 ↔ Moisture Sensor)
+```
+Pi 3A+ (40-pin)        ADS1115             Moisture Sensor v1.2
+------------------     ----------------    ---------------------
+3.3V (Pin 1)    ───▶   VDD
+GND  (Pin 6)    ───▶   GND                 GND
+SCL  (Pin 5)    ───▶   SCL
+SDA  (Pin 3)    ───▶   SDA
+ADDR            ───▶   GND (addr 0x48)
+									  AOUT ───▶ A3 (ADS1115)
+									  VCC  ───▶ 3.3V or 5V (per sensor spec)
+```
+
+```mermaid
+flowchart LR
+	Pi["Raspberry Pi 3 A+
+	SDA: GPIO2 (Pin 3)
+	SCL: GPIO3 (Pin 5)
+	3.3V: Pin 1
+	GND: Pin 6"]
+	ADC["ADS1115
+	VDD ↔ 3.3V
+	GND ↔ GND
+	SDA ↔ SDA
+	SCL ↔ SCL
+	ADDR ↔ GND (0x48)
+	A3 ↔ Moisture AOUT"]
+	Sensor["Capacitive Moisture Sensor v1.2
+	AOUT → ADS1115 A3
+	VCC → 3.3V or 5V
+	GND → GND"]
+
+	Pi -- I2C SDA/SCL --> ADC
+	Sensor -- Analog AOUT --> ADC
+	Pi -- Power 3.3V/GND --- Sensor
+	Pi -- Power 3.3V/GND --- ADC
+```
+
 ## Status
 - Type: Firmware + documentation
 - Code: Rust firmware present under `firmware/`
