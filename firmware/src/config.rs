@@ -1,8 +1,8 @@
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::env;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,22 +41,32 @@ impl Default for AppConfig {
 }
 
 fn config_path() -> Option<PathBuf> {
-    if let Some(pd) = ProjectDirs::from("org", "plants", "plants-love-rust") {
-        let dir = pd.config_dir().to_path_buf();
-        let _ = fs::create_dir_all(&dir);
-        return Some(dir.join("config.toml"));
-    }
-    None
+    // Place config next to the built binary in a local ./config directory
+    let exe = env::current_exe().ok()?;
+    let base: &Path = exe.parent()?;
+    let dir = base.join("config");
+    let _ = fs::create_dir_all(&dir);
+    Some(dir.join("config.toml"))
 }
 
 pub fn load_config() -> AppConfig {
     if let Some(path) = config_path() {
-        if let Ok(text) = fs::read_to_string(&path) {
-            if let Ok(cfg) = toml::from_str::<AppConfig>(&text) {
-                return cfg;
+        if path.exists() {
+            if let Ok(text) = fs::read_to_string(&path) {
+                if let Ok(cfg) = toml::from_str::<AppConfig>(&text) {
+                    return cfg;
+                }
             }
         }
+
+        // Create a default config file if missing or unreadable
+        let default_cfg = AppConfig::default();
+        if let Ok(data) = toml::to_string_pretty(&default_cfg) {
+            let _ = fs::write(&path, data);
+        }
+        return default_cfg;
     }
+
     AppConfig::default()
 }
 
